@@ -28,28 +28,46 @@ def get_weather(city):
 
 # ---- GEMINI RESPONSE FUNCTION ----
 def generate_ai_response(city, weather_info):
-    prompt = f"""
+    main_prompt = f"""
     You are a smart and helpful AI travel safety assistant.
 
     The user is interested in visiting the Indian city: **{city}**.
     The current weather details are: {weather_info}.
 
-    Please respond with:
-    1. A helpful and practical **safety tip** specific to this city or its region.
-    2. A short and interesting **fun fact** or unique cultural aspect of {city}.
-    3. One **digital safety or travel advice** (like using local apps, emergency numbers, or cultural dos/don'ts).
-
-    Be warm, helpful, and clear.
+    Please provide:
+    1. A helpful and practical **safety tip**.
+    2. A short **fun fact** about {city}.
+    3. One **digital safety or travel advice** (e.g., using local apps or tips for tourists).
+    
+    Keep it clear, friendly, and informative.
     """
+    language_prompt = f"What are the main local languages spoken in {city}, India? Respond in one line."
 
     try:
         model = genai.GenerativeModel(model_name="models/gemini-1.5-pro-001")
-        response = model.generate_content(prompt)
-        return response.text
+
+        # Main travel tips
+        travel_response = model.generate_content(main_prompt)
+        travel_text = travel_response.text
+
+        # Local language only
+        lang_response = model.generate_content(language_prompt)
+        language = lang_response.text.strip().replace("*", "")
+
+        # Static emergency info
+        emergency_info = (
+            f"🗣️ Local Language(s): {language}\n"
+            f"📞 Emergency Helpline Numbers:\n"
+            f"- Police: 112\n"
+            f"- Ambulance: 102\n"
+            f"- Women’s Helpline: 1090"
+        )
+
+        return travel_text, emergency_info
+
     except Exception as e:
         st.error(f"❌ Gemini API Error: {e}")
-        return "⚠️ AI response failed. Please try again later."
-
+        return "⚠️ AI response failed. Please try again later.", ""
 
 # ---- UI CONFIG ----
 st.set_page_config(page_title="🌍 Travel Safety Chatbot", layout="centered")
@@ -83,7 +101,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🧠 AI Travel Safety Chatbot")
-st.markdown("Ask about **any Indian city** to get weather updates, local safety tips, and smart travel advice.")
+st.markdown("Ask about **any Indian city** to get weather updates, safety tips, local languages, and emergency helplines.")
 
 # ---- SESSION STATE ----
 if "chat_history" not in st.session_state:
@@ -96,22 +114,20 @@ if user_input:
     user_msg = user_input.strip()
     timestamp = datetime.now().strftime("%I:%M %p")
 
-    # Save user message
     st.session_state.chat_history.append(("user", user_msg, timestamp))
 
-    # Response logic
     greetings = ["hi", "hello", "hey", "hii", "heyy", "yo", "hola"]
     if user_msg.lower() in greetings:
-        response = "👋 Hi! I'm your AI travel safety chatbot. Type the name of any Indian city to get weather, safety advice, and fun facts!"
+        response = "👋 Hi! I'm your AI travel safety chatbot. Type the name of any Indian city to get weather, safety tips, local languages, and helpline numbers!"
         st.session_state.chat_history.append(("bot", response, timestamp))
     else:
-        # Get weather + AI response
         weather_info = get_weather(user_msg)
-        ai_response = generate_ai_response(user_msg, weather_info)
+        travel_tips, emergency_details = generate_ai_response(user_msg, weather_info)
 
-        # Append responses
         st.session_state.chat_history.append(("bot", weather_info, timestamp))
-        st.session_state.chat_history.append(("bot", ai_response, timestamp))
+        if emergency_details:
+            st.session_state.chat_history.append(("bot", emergency_details, timestamp))
+        st.session_state.chat_history.append(("bot", travel_tips, timestamp))
 
 # ---- DISPLAY CHAT ----
 for sender, msg, time in st.session_state.chat_history:
