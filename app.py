@@ -5,8 +5,8 @@ import google.generativeai as genai
 import re
 
 # ---- CONFIG ----
-WEATHER_API_KEY = "942055b86cf421ffa91df3591b2d2ee0"
-GEMINI_API_KEY = "AIzaSyChB0b-MqY_5hHrrJ3wSqGyLjqNbWIJyf0"
+WEATHER_API_KEY = ""
+GEMINI_API_KEY = ""
 WEATHER_API_URL = "http://api.openweathermap.org/data/2.5/weather"
 
 # ---- Gemini API Setup ----
